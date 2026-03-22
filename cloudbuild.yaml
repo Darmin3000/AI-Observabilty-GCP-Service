@@ -1,0 +1,99 @@
+steps:
+  # --------------------------------------------------
+  # 1. Ingestion Service (API - Port 8080)
+  # --------------------------------------------------
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-ingestion'
+    args: [
+      'build', '-t', 'us-east1-docker.pkg.dev/$PROJECT_ID/model-monitoring/ingestion:latest',
+      '-f', 'ingestion_service/Dockerfile', '.' 
+    ]
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-ingestion'
+    args: ['push', 'us-east1-docker.pkg.dev/$PROJECT_ID/model-monitoring/ingestion:latest']
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'deploy-ingestion'
+    entrypoint: 'gcloud'
+    args: [
+      'run', 'deploy', 'ingestion-service',
+      '--image', 'us-east1-docker.pkg.dev/$PROJECT_ID/model-monitoring/ingestion:latest',
+      '--region', 'us-east1',
+      '--platform', 'managed',
+      '--allow-unauthenticated',
+      '--set-env-vars', 'GCP_PROJECT_ID=$PROJECT_ID,BQ_CANONICAL_DATASET=otel_ingestion'
+    ]
+
+  # --------------------------------------------------
+  # 2. Generative Metrics (Worker / Portless)
+  # --------------------------------------------------
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-generative'
+    args: [
+      'build', '-t', 'us-east1-docker.pkg.dev/$PROJECT_ID/model-monitoring/metrics-generative:latest',
+      '-f', 'metrics_generative_service/Dockerfile', '.'
+    ]
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-east1-docker.pkg.dev/$PROJECT_ID/model-monitoring/metrics-generative:latest']
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args: [
+      'run', 'jobs', 'deploy', 'metrics-generative-job',
+      '--image', 'us-east1-docker.pkg.dev/$PROJECT_ID/model-monitoring/metrics-generative:latest',
+      '--region', 'us-east1'
+    ]
+
+  # --------------------------------------------------
+  # 3. Predictive Metrics (Worker / Portless)
+  # --------------------------------------------------
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-predictive'
+    args: [
+      'build', '-t', 'us-east1-docker.pkg.dev/$PROJECT_ID/model-monitoring/metrics-predictive:latest',
+      '-f', 'metrics_predictive_service/Dockerfile', '.'
+    ]
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-east1-docker.pkg.dev/$PROJECT_ID/model-monitoring/metrics-predictive:latest']
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args: [
+      'run', 'jobs', 'deploy', 'metrics-predictive-job',
+      '--image', 'us-east1-docker.pkg.dev/$PROJECT_ID/model-monitoring/metrics-predictive:latest',
+      '--region', 'us-east1'
+    ]
+
+  # --------------------------------------------------
+  # 4. Alerts Service (Poller / Portless)
+  # --------------------------------------------------
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-alerts'
+    args: [
+      'build', '-t', 'us-east1-docker.pkg.dev/$PROJECT_ID/model-monitoring/alerts:latest',
+      '-f', 'alerts_service/Dockerfile', '.'
+    ]
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-east1-docker.pkg.dev/$PROJECT_ID/model-monitoring/alerts:latest']
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args: [
+      'run', 'jobs', 'deploy', 'alerts-poller-job',
+      '--image', 'us-east1-docker.pkg.dev/$PROJECT_ID/model-monitoring/alerts:latest',
+      '--region', 'us-east1'
+    ]
+
+images:
+  - 'us-east1-docker.pkg.dev/$PROJECT_ID/model-monitoring/ingestion:latest'
+  - 'us-east1-docker.pkg.dev/$PROJECT_ID/model-monitoring/metrics-generative:latest'
+  - 'us-east1-docker.pkg.dev/$PROJECT_ID/model-monitoring/metrics-predictive:latest'
+  - 'us-east1-docker.pkg.dev/$PROJECT_ID/model-monitoring/alerts:latest'
+
+options:
+  logging: 'CLOUD_LOGGING_ONLY'
+  machineType: 'E2_HIGHCPU_8' # Speeds up multi-container builds

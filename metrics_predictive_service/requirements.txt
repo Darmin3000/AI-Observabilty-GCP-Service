@@ -1,0 +1,21 @@
+# Core
+pydantic>=2.5
+python-dateutil>=2.8
+starlette>=0.36
+
+# GCP
+google-cloud-bigquery>=3.17
+google-cloud-logging>=3.10
+google-cloud-storage>=3.9.0
+google-genai>=0.3.0
+
+# Web / API
+fastapi>=0.110
+uvicorn>=0.29
+
+# Config / parsing
+PyYAML>=6.0
+langfuse>=2.54.0
+evidently>=0.7.20
+tiktoken>=0.12.0
+python-dotenv>=1.2.1

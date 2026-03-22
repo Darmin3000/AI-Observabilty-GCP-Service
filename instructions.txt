@@ -1,0 +1,23 @@
+# google cloud initialization. This is needed for vertex ai to work
+
+gcloud init
+gcloud auth application-default login
+gcloud service enable aiplatform.googleapis.com
+
+# start the api service
+
+uvicorn services.phi_service.app.main:app --reload --port 8080
+
+# Health check
+
+curl http://localhost:8080/health
+
+# Sending the payload to the fastapi endpoint
+
+$response = Invoke-RestMethod `
+  -Uri http://localhost:8080/ingest `
+  -Method POST `
+  -ContentType "application/json" `
+  -Body (Get-Content payload.json -Raw)
+
+$response | ConvertTo-Json -Depth 10

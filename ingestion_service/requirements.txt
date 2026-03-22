@@ -1,0 +1,17 @@
+# Core
+functions-framework==3.*
+
+
+# GCP
+google-cloud-bigquery>=3.17
+google-cloud-logging>=3.10
+google-cloud-storage>=3.9.0
+google-genai>=0.3.0
+google-cloud-secret-manager>==2.16.0
+requests==2.32.3
+
+
+# Database tools
+SQLAlchemy==2.0.31
+pg8000==1.31.2  # Use this if using Cloud SQL PostgreSQL
+# pymysql==1.1.1 # Use this if using Cloud SQL MySQL
